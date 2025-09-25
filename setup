@@ -2,7 +2,7 @@
 set -e
 set -o pipefail
 clear
-if [ "$(id -u)" != "1000" ]; then
+if [ "$(id -u)" != "0" ]; then
 	echo "Start script with root privlages"
 	exit
 fi
