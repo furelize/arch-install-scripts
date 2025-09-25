@@ -1,0 +1,50 @@
+#!/bin/bash
+clear
+if [ "$(id -u)" != "1000" ]; then
+	echo "Start script with root privlages"
+	exit
+fi
+echo "Welcome to the setup"
+echo "Have you already made a disk configuration y/n"
+read dishch
+if [ "$dishch" != "y" ] && [ "$diskch" != "n" ]; then
+	while [ "$diskch" != "y" ] && [ "$diskch" != "n" ]; do
+		echo "please give a acceptable answear"
+		read diskch
+	done
+fi
+if [ "$diskch" == "n" ]; then
+	echo "Which of the following drives do you want to use"
+	lsblk 
+	echo "remember drive number of the partitions created so they can be mounted"
+	read disk
+	cgdisk /dev/$disk
+fi
+echo "which drive is the root drive"
+read disk
+mkfs.ext4 /dev/$disk
+mount /dev/$disk /mnt
+echo "which drive is the boot drive"
+read bootdisk
+mkfs.fat -F32 /dev/$bootdisk
+mkdir /mnt/boot
+mount /dev/$bootdisk /mnt/boot
+echo "which drive is the swap drive (no input if you do not want swap)"
+read disk
+if [ "$disk" != "" ];
+	mkswap /dev/$disk
+	swapon /dev/$disk
+fi
+pacman -Sy pacman-contrib lspci
+cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.backup
+echo "generating mirrorlist may take a while"
+rankmirrors -n 6 /etc/pacman.d/mirrorlist.backup > /etc/pacman.d/mirrorlist
+sed -i -e 's/#COLOR/COLOR/g' /etc/pacman.conf
+sed -i -e 's/ParallelDownloads = 5/ParallelDownloads = 50/g' /etc/pacman.conf
+echo "ILoveCandy" >> /etc/pacman.conf
+pacstrap -K /mnt ufw base linux base-devel waybar hyprland git grub efibootmgr sddm wayland rofi kitty ttf-ubuntu-mono-nerd bash-completions code firefox pavucontrol thunar sof-firmware wpa_supplicant dhcpcd htop btop intel-ucode linux-firmware-mediatek linux-firmware-nvidia
+arch-chroot /mnt
+systemctl enable wpa_supplicant
+systemctl enable dhcpcd
+systemctl enable ufw
+systemctl enable sddm
